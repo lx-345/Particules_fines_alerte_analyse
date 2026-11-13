@@ -16,7 +16,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
 
 # Paramètres de l'application
 INTERVALLE_SCRAPING = 60  # Secondes
-SEUIL_ALERTE_NIVEAU = 2   # Déclenchement à partir de "Moyen" (2)
+SEUIL_ALERTE_NIVEAU = 1   # Déclenchement à partir de "Moyen" (2)
 
 CATEGORIES_ATMO = ["Bon", "Moyen", "Dégradé", "Mauvais", "Très mauvais", "Extrêmement mauvais"]
 SEUILS_PM25 = [10, 20, 25, 50, 75]

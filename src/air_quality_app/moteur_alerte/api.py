@@ -1,33 +1,37 @@
-import requests
+import pandas as pd
+from datetime import datetime
 from typing import Tuple, Optional
 from .config import logger, CATEGORIES_ATMO, SEUILS_PM25, SEUILS_PM10
 
 def obtenir_dernieres_mesures(chip_id: str) -> Tuple[Optional[float], Optional[float], Optional[float], str]:
-    """Interroge l'API Sensor.Community pour un capteur donné."""
-    url = f"https://data.sensor.community/airrohr/v1/sensor/{chip_id}/"
+    """Interroge l'archive CSV Madavi et calcule les moyennes récentes."""
+    date_du_jour = datetime.now().strftime("%Y-%m-%d")
+    url = f"https://api-rrd.madavi.de/data_csv/csv-files/{date_du_jour}/data-esp8266-{chip_id}-{date_du_jour}.csv"
+
     try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
+        # Téléchargement du CSV
+        df = pd.read_csv(url, sep=";")
         
-        if not data:
-            return None, None, None, ""
-            
-        dernier_releve = data[0]
-        horodatage = dernier_releve.get("timestamp", "")
+        # Conversion fuseau horaire
+        df["Time"] = pd.to_datetime(df["Time"]).dt.tz_localize("UTC").dt.tz_convert("Europe/Paris")
+        derniere_date = df["Time"].max()
         
-        pm25 = pm10 = hr = None
-        for valeur in dernier_releve.get("sensordatavalues", []):
-            if valeur["value_type"] == "P2":
-                pm25 = float(valeur["value"])
-            elif valeur["value_type"] == "P1":
-                pm10 = float(valeur["value"])
-            elif valeur["value_type"] == "humidity":
-                hr = float(valeur["value"])
-                
-        return pm25, pm10, hr, horodatage
-    except requests.RequestException as e:
-        logger.error(f"Erreur API pour le capteur {chip_id} : {e}")
+        # Filtrage sur les 10 dernières minutes
+        seuil = derniere_date - pd.Timedelta(minutes=10)
+        df_recent = df[df["Time"] >= seuil]
+
+        # Calcul des moyennes (remplacement du pm25 = 80 en dur par la vraie donnée)
+        
+        pm25 = float(df_recent["SDS_P2"].mean())
+        pm10 = float(df_recent["SDS_P1"].mean())
+        
+        # Gestion optionnelle de l'humidité si le capteur (ex: BME280) est présent
+        hr = float(df_recent["BME280_humidity"].mean()) if "BME280_humidity" in df_recent.columns else None
+
+        return round(pm25, 2), round(pm10, 2), hr, str(derniere_date)
+
+    except Exception as e:
+        logger.error(f"Erreur Madavi pour le capteur {chip_id} : {e}")
         return None, None, None, ""
 
 def calculer_niveau_atmo(pm25: float, pm10: float) -> Tuple[int, str]:
