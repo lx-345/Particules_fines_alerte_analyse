@@ -6,8 +6,11 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "pandas>=3.1.1",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
     "python-dotenv>=1.2.4",
     "requests>=2.31.0",
+    "ruff>=0.17.5",
     "sqlalchemy>=2.1.8",
     "streamlit>=1.67.0",
 ]
@@ -15,3 +18,23 @@ dependencies = [
 [build-system]
 requires = ["uv_build>=0.11.8,<0.12"]
 build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+exclude = ["notebooks/"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+markers = [
+    "unit: Tests unitaires isolés qui n'utilisent ni réseau ni vraie base de données",
+    "integration: Tests d'intégration qui vérifient la communication avec l'extérieur (API Madavi, SQLite)"
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17.5",
+]
