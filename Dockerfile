@@ -32,4 +32,4 @@ USER appuser
 EXPOSE 8501
 
 # Commande de démarrage : on réutilise notre entrypoint uv
-CMD ["uv", "run", "app"]
+CMD ["uv", "run", "streamlit", "run", "src/air_quality_app/streamlit_front/front-alerte/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
