@@ -4,28 +4,13 @@ import sqlite3
 from email.mime.text import MIMEText
 
 import pandas as pd
-import requests
 import streamlit as st
 from database import DB_PATH, ajouter_utilisateur, init_db
 
-
-def recuperer_donnees_capteur(chip_id: str) -> tuple[bool, str]:
-    """Recupere les donnees PM2.5 et PM10 via l'API Sensor.Community."""
-    url = f"https://data.sensor.community/airrohr/v1/sensor/{chip_id}/"
-    try:
-        resp = requests.get(url, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        if not data:
-            return False, f"Aucune donnee recente pour le capteur {chip_id}."
-
-        valeurs = data[0].get("sensordatavalues", [])
-        mesures = {v["value_type"]: v["value"] for v in valeurs}
-        pm25 = mesures.get("P2", "N/A")
-        pm10 = mesures.get("P1", "N/A")
-        return True, f"PM2.5 : {pm25} µg/m³ | PM10 : {pm10} µg/m³"
-    except Exception as e:
-        return False, f"Erreur API capteur ({chip_id}) : {e}"
+from air_quality_app.moteur_alerte.api import (
+    calculer_niveau_atmo,
+    obtenir_dernieres_mesures,
+)
 
 
 def envoyer_email_test(destinataire: str, chip_id: str) -> tuple[bool, str]:
@@ -40,14 +25,26 @@ def envoyer_email_test(destinataire: str, chip_id: str) -> tuple[bool, str]:
             "Variables SMTP_USER ou SMTP_PASSWORD manquantes.",
         )
 
-    ok_capteur, infos_air = recuperer_donnees_capteur(chip_id)
-    statut = "Connecte" if ok_capteur else "Erreur de connexion"
+    pm25, pm10, hr, info_date = obtenir_dernieres_mesures(chip_id.strip())
 
-    corps_message = (
-        f"Test d'alerte pour le capteur {chip_id}\n"
-        f"Statut API : {statut}\n"
-        f"Releve actuel : {infos_air}\n"
-    )
+    if pm25 is not None and pm10 is not None:
+        niveau, qualite = calculer_niveau_atmo(pm25, pm10)
+        hr_txt = f"{hr:.1f} %" if hr is not None else "Non mesuree"
+        resume = f"{qualite} ({niveau}/6) | PM2.5: {pm25} | PM10: {pm10}"
+        corps_message = (
+            f"Bilan qualite de l'air - Capteur {chip_id}\n"
+            f"Derniere mesure : {info_date}\n\n"
+            f"- Indice ATMO : {niveau}/6 ({qualite})\n"
+            f"- PM2.5 (moy. 10 min) : {pm25} ug/m3\n"
+            f"- PM10 (moy. 10 min) : {pm10} ug/m3\n"
+            f"- Humidite : {hr_txt}\n"
+        )
+    else:
+        resume = f"Aucune donnee Madavi aujourd'hui pour {chip_id}"
+        corps_message = (
+            f"Test d'alerte pour le capteur {chip_id}\n"
+            f"Impossible de recuperer les mesures sur Madavi.\n"
+        )
 
     msg = MIMEText(corps_message)
     msg["Subject"] = f"Test Alerte Air - Capteur {chip_id}"
@@ -58,7 +55,7 @@ def envoyer_email_test(destinataire: str, chip_id: str) -> tuple[bool, str]:
         with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=10) as server:
             server.login(smtp_user, smtp_password.replace(" ", ""))
             server.sendmail(smtp_user, [destinataire], msg.as_string())
-        return True, f"E-mail envoye ! ({infos_air})"
+        return True, f"E-mail envoye ! ({resume})"
     except Exception as e:
         return False, str(e)
 
@@ -72,7 +69,6 @@ def main():
         "de l'air se degrade sur votre capteur."
     )
 
-    # Initialisation de la base au chargement de la page
     init_db()
 
     with st.form("inscription_form"):
@@ -106,8 +102,7 @@ def main():
 
     st.divider()
 
-    # Section de test d'envoi d'e-mail avec donnees du capteur
-    st.subheader("Tester la reception et la connexion au capteur")
+    st.subheader("Tester le moteur d'alerte (Madavi)")
     col_mail, col_cap = st.columns(2)
     with col_mail:
         email_test = st.text_input(
@@ -115,14 +110,14 @@ def main():
         )
     with col_cap:
         capteur_test = st.text_input(
-            "ID du capteur a tester :", placeholder="Ex: 778803"
+            "Numero du capteur (Chip ID) :", placeholder="Ex: 14990683"
         )
 
     if st.button("Tester mon alerte"):
         if not email_test or not capteur_test:
-            st.warning("Veuillez saisir un e-mail et un ID de capteur.")
+            st.warning("Veuillez saisir un e-mail et un Chip ID.")
         else:
-            with st.spinner("Recuperation des donnees et envoi en cours..."):
+            with st.spinner("Appel de moteur_alerte.api en cours..."):
                 succes, message = envoyer_email_test(email_test, capteur_test)
                 if succes:
                     st.success(message)
@@ -131,7 +126,6 @@ def main():
 
     st.divider()
 
-    # Section de debug de la base de donnees
     if st.checkbox("Afficher le contenu de la base (debug)"):
         conn = sqlite3.connect(str(DB_PATH))
 

@@ -19,17 +19,12 @@ COPY . .
 # Installation du projet lui-même
 RUN uv sync --frozen --no-dev
 
-# --- COMMENTÉ POUR RÉSERVER LES PROBLÈMES DE PERMISSIONS SQLITE ---
-# Création d'un utilisateur non-root et attribution des droits sur /app
-# RUN useradd --create-home --uid 1000 appuser \
-#     && chown -R appuser:appuser /app
-
-# On bascule sur cet utilisateur
-# USER appuser
-# ------------------------------------------------------------------
+# Dossier partagé pour la base SQLite sur Kubernetes
+ENV DB_DIR="/app/data"
+ENV PYTHONUNBUFFERED=1
 
 # Port exposé par Streamlit
 EXPOSE 8501
 
-# Commande de démarrage : on réutilise notre entrypoint uv
+# Commande par défaut (utilisée par le conteneur Streamlit)
 CMD ["uv", "run", "streamlit", "run", "src/air_quality_app/streamlit_front/front-alerte/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
