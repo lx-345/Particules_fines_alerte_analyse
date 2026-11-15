@@ -1,7 +1,15 @@
+import os
 import sqlite3
 from typing import Dict, List
 
-from .config import DB_PATH, logger
+from .config import logger
+
+# Utilise la variable d'environnement DB_DIR (pour Docker/K8s),
+# ou crée un dossier 'data' à la racine du projet en local
+DB_DIR = os.getenv("DB_DIR", os.path.join(os.getcwd(), "data"))
+os.makedirs(DB_DIR, exist_ok=True)
+
+DB_PATH = os.path.join(DB_DIR, "alertes.sqlite")
 
 
 def obtenir_abonnements_par_capteur() -> Dict[str, List[Dict[str, str]]]:

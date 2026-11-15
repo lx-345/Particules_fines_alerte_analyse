@@ -1,9 +1,12 @@
+import os
 import sqlite3
-from pathlib import Path
 
-# Résolution dynamique du chemin racine (5 niveaux plus haut)
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
-DB_PATH = BASE_DIR / "data" / "air_quality_local.db"
+# Utilise la variable d'environnement DB_DIR (pour Docker/K8s),
+# ou crée un dossier 'data' à la racine du projet en local
+DB_DIR = os.getenv("DB_DIR", os.path.join(os.getcwd(), "data"))
+os.makedirs(DB_DIR, exist_ok=True)
+
+DB_PATH = os.path.join(DB_DIR, "alertes.sqlite")
 
 
 def init_db():
