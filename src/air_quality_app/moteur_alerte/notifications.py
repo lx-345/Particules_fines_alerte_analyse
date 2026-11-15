@@ -23,9 +23,9 @@ def envoyer_salve_alertes(
 
             for user in destinataires:
                 msg = EmailMessage()
-                msg[
-                    "Subject"
-                ] = f"⚠️ Alerte Qualité de l'Air - Capteur {chip_id} ({statut})"
+                msg["Subject"] = (
+                    f"⚠️ Alerte Qualité de l'Air - Capteur {chip_id} ({statut})"
+                )
                 msg["From"] = MAIL_SENDER
                 msg["To"] = user["email"]
 
