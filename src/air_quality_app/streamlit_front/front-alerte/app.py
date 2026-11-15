@@ -10,14 +10,14 @@ from database import DB_PATH, ajouter_utilisateur, init_db
 
 def envoyer_email_test(destinataire: str) -> tuple[bool, str]:
     smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", 587))
+    smtp_port = int(os.getenv("SMTP_PORT", 465))
     smtp_user = os.getenv("SMTP_USER")
     smtp_password = os.getenv("SMTP_PASSWORD")
 
     if not smtp_user or not smtp_password:
         return (
             False,
-            "Variables SMTP_USER ou SMTP_PASSWORD manquantes sur le serveur.",
+            "Variables SMTP_USER ou SMTP_PASSWORD manquantes.",
         )
 
     msg = MIMEText("Ceci est un test d'alerte de qualite de l'air depuis Streamlit.")
@@ -26,8 +26,8 @@ def envoyer_email_test(destinataire: str) -> tuple[bool, str]:
     msg["To"] = destinataire
 
     try:
-        with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
-            server.starttls()
+        # Utilisation de SMTP_SSL sur le port 465
+        with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=10) as server:
             server.login(smtp_user, smtp_password.replace(" ", ""))
             server.sendmail(smtp_user, [destinataire], msg.as_string())
         return True, "E-mail envoye avec succes !"
