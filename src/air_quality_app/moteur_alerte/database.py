@@ -20,7 +20,8 @@ def obtenir_abonnements_par_capteur() -> Dict[str, List[Dict[str, str]]]:
         return {}
 
     try:
-        with sqlite3.connect(DB_PATH) as conn:
+        # CORRECTION ICI : Ajout de str() autour de DB_PATH
+        with sqlite3.connect(str(DB_PATH)) as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT numero_capteur, prenom, nom, email, emplacement FROM users;"
