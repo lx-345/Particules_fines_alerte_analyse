@@ -23,10 +23,11 @@ build-backend = "uv_build"
 line-length = 88
 target-version = "py312"
 exclude = ["notebooks/"]
+extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
-extend-exclude = ["*.ipynb"]
+
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
