@@ -1,5 +1,8 @@
+import sqlite3
+
+import pandas as pd
 import streamlit as st
-from database import ajouter_utilisateur, init_db
+from database import DB_PATH, ajouter_utilisateur, init_db
 
 
 def main():
@@ -46,3 +49,21 @@ def main():
 
 if __name__ == "__main__":
     main()
+if st.checkbox("Afficher le contenu de la base (debug)"):
+    # Utilisation de str() pour éviter l'erreur de type avec pathlib
+    conn = sqlite3.connect(str(DB_PATH))
+
+    # Extraction de la requête pour aérer le code et respecter les 88 caractères
+    query_tables = "SELECT name FROM sqlite_master WHERE type='table';"
+    tables = pd.read_sql(query_tables, conn)
+    st.write("Tables disponibles :", tables)
+
+    try:
+        # La table créée dans init_db() s'appelle 'users'
+        df = pd.read_sql("SELECT * FROM users", conn)
+        st.dataframe(df)
+    except Exception as e:
+        st.error(f"Erreur de lecture : {e}")
+    finally:
+        # Le bloc finally garantit que la connexion sera fermée même en cas d'erreur
+        conn.close()
