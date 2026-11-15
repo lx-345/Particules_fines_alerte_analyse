@@ -43,3 +43,6 @@ def envoyer_salve_alertes(
 
     except Exception as e:
         logger.error(f"Échec critique SMTP pour le capteur {chip_id} : {e}")
+
+
+# Validation CI finale
