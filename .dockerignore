@@ -1,0 +1,23 @@
+# Environnements et caches Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+
+# Notebooks
+notebooks/
+
+# Git et CI
+.git/
+.github/
+.pre-commit-config.yaml
+
+# Fichiers temporaires et divers
+tmp/
+.cache/
+todo.md
+Dockerfile
+.dockerignore
+data/
