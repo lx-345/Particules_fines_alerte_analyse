@@ -26,6 +26,7 @@ exclude = ["notebooks/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+extend-exclude = ["*.ipynb"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
@@ -38,3 +39,4 @@ markers = [
 dev = [
     "ruff>=0.17.5",
 ]
+
