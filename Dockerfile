@@ -7,8 +7,6 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # Répertoire de travail dans le conteneur
 WORKDIR /app
 
-# ... (le reste du fichier reste strictement identique)
-
 # Copie des fichiers de dépendances d'abord
 COPY pyproject.toml uv.lock ./
 
@@ -21,12 +19,14 @@ COPY . .
 # Installation du projet lui-même
 RUN uv sync --frozen --no-dev
 
+# --- COMMENTÉ POUR RÉSERVER LES PROBLÈMES DE PERMISSIONS SQLITE ---
 # Création d'un utilisateur non-root et attribution des droits sur /app
-RUN useradd --create-home --uid 1000 appuser \
-    && chown -R appuser:appuser /app
+# RUN useradd --create-home --uid 1000 appuser \
+#     && chown -R appuser:appuser /app
 
 # On bascule sur cet utilisateur
-USER appuser
+# USER appuser
+# ------------------------------------------------------------------
 
 # Port exposé par Streamlit
 EXPOSE 8501
