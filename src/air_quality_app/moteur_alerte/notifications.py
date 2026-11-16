@@ -40,21 +40,23 @@ def envoyer_salve_alertes(
                 lieu = user.get("emplacement", "Inconnu")
 
                 msg = EmailMessage()
+
+                # Formatage exact attendu par Ruff pour le sujet
                 msg[
                     "Subject"
                 ] = f"⚠️ Alerte Qualité de l'Air - Capteur {chip_id} ({statut})"
+
                 msg["From"] = expediteur
                 msg["To"] = email_dest
 
                 msg.set_content(
                     f"Bonjour {prenom} {nom},\n\n"
-                    "Une dégradation de la qualité de l'air a été "
-                    f"détectée sur votre capteur {lieu} ({chip_id}) :\n\n"
+                    "Une dégradation de la qualité de l'air a été détectée sur "
+                    f"votre capteur {lieu} ({chip_id}) :\n\n"
                     f"• Statut global : {statut} (Niveau {niveau}/6)\n"
                     f"• PM 2.5 : {pm25:.1f} µg/m³\n"
                     f"• PM 10  : {pm10:.1f} µg/m³\n\n"
-                    "Pensez à limiter l'aération et à consulter "
-                    "votre tableau de bord."
+                    "Pensez à limiter l'aération et à consulter le tableau de bord."
                 )
                 server.send_message(msg)
                 logger.info(f"Email envoyé à {email_dest} (Capteur: {chip_id})")
@@ -62,6 +64,3 @@ def envoyer_salve_alertes(
     except Exception as e:
         logger.error(f"Échec critique SMTP pour le capteur {chip_id} : {e}")
         raise
-
-
-# git commit
