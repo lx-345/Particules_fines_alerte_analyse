@@ -224,7 +224,7 @@ def main():
         st.write("Tables disponibles :", tables)
 
         try:
-            df = pd.read_sql("SELECT * FROM users", conn)
+            df = pd.read_sql("SELECT id, nom, numero_capteur FROM users", conn)
             st.dataframe(df)
         except Exception as e:
             st.error(f"Erreur de lecture : {e}")
