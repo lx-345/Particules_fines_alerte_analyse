@@ -1,4 +1,5 @@
 import time
+from pathlib import Path
 from typing import Dict
 
 from .api import calculer_niveau_atmo, obtenir_dernieres_mesures
@@ -13,7 +14,20 @@ def main():
 
     etats_alertes: Dict[str, bool] = {}
 
+    # Chemin vers le fichier signal créé par Streamlit
+    fichier_reset = Path(DB_PATH).parent / "reset_spam.flag"
+
     while True:
+        # --- VÉRIFICATION DU SIGNAL DE RÉINITIALISATION STREAMLIT ---
+        if fichier_reset.exists():
+            etats_alertes.clear()
+            try:
+                fichier_reset.unlink()  # On supprime le fichier après lecture
+                logger.info("🔓 Verrou anti-spam réinitialisé manuellement.")
+            except Exception as e:
+                logger.error(f"Erreur suppression flag : {e}")
+        # ------------------------------------------------------------
+
         abonnements = obtenir_abonnements_par_capteur()
 
         if not abonnements:
@@ -48,6 +62,7 @@ def main():
                             niveau_global,
                             pm25,
                             pm10,
+                            hr,
                         )
                         etats_alertes[chip_id] = True
                 else:

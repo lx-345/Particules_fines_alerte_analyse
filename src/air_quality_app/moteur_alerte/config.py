@@ -9,9 +9,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 load_dotenv(BASE_DIR / ".env")
 DB_PATH = BASE_DIR / "data" / "air_quality_local.db"
 
-# Configuration Email
-MAIL_SENDER = os.getenv("MAIL_SENDER")
-MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
+# Configuration Email (compatible MAIL_* et SMTP_*)
+MAIL_SENDER = os.getenv("MAIL_SENDER") or os.getenv("SMTP_USER")
+_raw_pass = os.getenv("MAIL_PASSWORD") or os.getenv("SMTP_PASSWORD") or ""
+MAIL_PASSWORD = _raw_pass.replace(" ", "")
+
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
 
