@@ -139,37 +139,59 @@ def main():
 
     init_db()
 
-    with st.form("inscription_form"):
-        st.subheader("Vos coordonnees")
-        col1, col2 = st.columns(2)
-        with col1:
-            prenom = st.text_input("Prenom")
-        with col2:
-            nom = st.text_input("Nom")
+    # --- FORMULAIRE PRINCIPAL (SANS st.form POUR LA RÉACTIVITÉ) ---
+    st.subheader("Vos coordonnees")
+    col1, col2 = st.columns(2)
+    with col1:
+        prenom = st.text_input("Prenom")
+    with col2:
+        nom = st.text_input("Nom")
 
-        email = st.text_input("Adresse e-mail")
+    email = st.text_input("Adresse e-mail")
 
-        st.subheader("Votre capteur")
-        numero_capteur = st.text_input("Numero du capteur (Chip ID)")
-        emplacement = st.selectbox("Emplacement", ["Exterieur", "Interieur"])
+    st.subheader("Votre capteur")
+    numero_capteur = st.text_input("Numero du capteur (Chip ID)")
+    emplacement = st.selectbox("Emplacement", ["Exterieur", "Interieur"])
 
-        submit = st.form_submit_button("M'inscrire aux alertes")
+    # --- BARRE LATÉRALE DYNAMIQUE (S'active dès que le capteur est rempli) ---
+    st.sidebar.header("📡 État en direct")
+    if numero_capteur:
+        st.sidebar.subheader(f"Capteur {numero_capteur}")
+        with st.sidebar.spinner("Interrogation de Madavi..."):
+            pm25, pm10, hr, info_date = obtenir_dernieres_mesures(numero_capteur)
+            if pm25 is not None and pm10 is not None:
+                niveau, qualite = calculer_niveau_atmo(pm25, pm10)
 
-        if submit:
-            if all([prenom, nom, email, numero_capteur]):
-                try:
-                    ajouter_utilisateur(numero_capteur, prenom, nom, email, emplacement)
-                    st.success(
-                        "Inscription reussie. Alertes activees pour le "
-                        f"capteur {numero_capteur}."
-                    )
-                except Exception as e:
-                    st.error(f"Erreur lors de l'inscription : {e}")
+                st.sidebar.metric("Indice ATMO", f"{niveau}/6 ({qualite})")
+                st.sidebar.metric("Humidite", f"{hr} %" if hr else "N/A")
+                st.sidebar.metric("PM 2.5", f"{pm25} µg/m³")
+                st.sidebar.metric("PM 10", f"{pm10} µg/m³")
+                st.sidebar.caption(f"Dernière mesure : {info_date}")
             else:
-                st.warning("Veuillez remplir tous les champs obligatoires.")
+                st.sidebar.error("Aucune mesure recente sur Madavi.")
+    else:
+        st.sidebar.info(
+            "Saisissez un Chip ID au centre pour afficher "
+            "ses constantes environnementales ici."
+        )
+
+    # Bouton de soumission classique
+    if st.button("M'inscrire aux alertes", type="primary"):
+        if all([prenom, nom, email, numero_capteur]):
+            try:
+                ajouter_utilisateur(numero_capteur, prenom, nom, email, emplacement)
+                st.success(
+                    "Inscription reussie. Alertes activees pour le "
+                    f"capteur {numero_capteur}."
+                )
+            except Exception as e:
+                st.error(f"Erreur lors de l'inscription : {e}")
+        else:
+            st.warning("Veuillez remplir tous les champs obligatoires.")
 
     st.divider()
 
+    # --- TESTS ET DEBUG ---
     st.subheader("Tester un capteur unitaire (Madavi)")
     col_mail, col_cap = st.columns(2)
     with col_mail:
@@ -202,7 +224,7 @@ def main():
         st.write("Tables disponibles :", tables)
 
         try:
-            df = pd.read_sql("SELECT id, numero_capteur, prenom FROM users", conn)
+            df = pd.read_sql("SELECT * FROM users", conn)
             st.dataframe(df)
         except Exception as e:
             st.error(f"Erreur de lecture : {e}")
@@ -221,7 +243,6 @@ def main():
         st.subheader("Contrôle du moteur d'alerte")
         if st.button("🔓 Réinitialiser le verrou anti-spam (Worker)"):
             try:
-                # On crée un fichier "signal" dans le dossier partagé
                 dossier_data = Path(os.getenv("DB_DIR", "data"))
                 dossier_data.mkdir(exist_ok=True)
                 (dossier_data / "reset_spam.flag").touch()
