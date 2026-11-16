@@ -40,9 +40,9 @@ def envoyer_salve_alertes(
                 lieu = user.get("emplacement", "Inconnu")
 
                 msg = EmailMessage()
-                msg["Subject"] = (
-                    f"⚠️ Alerte Qualité de l'Air - " f"Capteur {chip_id} ({statut})"
-                )
+                msg[
+                    "Subject"
+                ] = f"⚠️ Alerte Qualité de l'Air - Capteur {chip_id} ({statut})"
                 msg["From"] = expediteur
                 msg["To"] = email_dest
 
