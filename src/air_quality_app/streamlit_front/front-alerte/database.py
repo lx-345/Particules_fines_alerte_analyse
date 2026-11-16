@@ -8,15 +8,15 @@ DB_PATH = Path(DB_DIR) / "alertes.sqlite"
 
 
 def init_db():
-    """Crée la base et active le mode WAL pour la lecture"""
-    """/écriture concurrente."""
+    """Crée la base, nettoie les doublons et empêche leur création."""
     # Création du dossier parent de manière sécurisée
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    # str(DB_PATH) garantit que sqlite3 reçoit bien du te
     with sqlite3.connect(str(DB_PATH)) as conn:
         conn.execute("PRAGMA journal_mode=WAL;")
         cursor = conn.cursor()
+
+        # 1. Création de la table de base
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
@@ -30,20 +30,47 @@ def init_db():
             )
             """
         )
+
+        # 2. Nettoyage des doublons existants (on garde la plus ancienne inscription)
+        cursor.execute(
+            """
+            DELETE FROM users
+            WHERE id NOT IN (
+                SELECT MIN(id)
+                FROM users
+                GROUP BY email, numero_capteur
+            )
+            """
+        )
+
+        # 3. Verrouillage pour l'avenir avec un Index Unique
+        cursor.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_email_capteur 
+            ON users(email, numero_capteur)
+            """
+        )
+
         conn.commit()
 
 
 def ajouter_utilisateur(
     capteur: str, prenom: str, nom: str, email: str, emplacement: str
 ):
-    """Insère un nouvel abonné dans la base de données."""
+    """Insère un abonné ou lève une erreur s'il est déjà existant."""
     with sqlite3.connect(str(DB_PATH)) as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO users (numero_capteur, prenom, nom, email, emplacement)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (capteur, prenom, nom, email, emplacement),
-        )
-        conn.commit()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO users (numero_capteur, prenom, nom, email, emplacement)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (capteur, prenom, nom, email, emplacement),
+            )
+            conn.commit()
+        except sqlite3.IntegrityError:
+            # Cette erreur sera attrapée par ton bloc try/except dans Streamlit
+            raise ValueError(
+                f"L'adresse {email} est déjà inscrite pour le capteur {capteur}."
+            )
