@@ -12,6 +12,7 @@ def envoyer_salve_alertes(
     niveau: int,
     pm25: float,
     pm10: float,
+    hr: float,
 ) -> None:
     """Ouvre une session SMTP unique et envoie les emails aux abonnes."""
     if not destinataires:
@@ -52,9 +53,10 @@ def envoyer_salve_alertes(
                     f"Bonjour {prenom} {nom},\n\n"
                     "Une degradation de la qualite de l'air a ete detectee sur "
                     f"votre capteur {lieu} ({chip_id}) :\n\n"
-                    f"• Statut global : {statut} (Niveau {niveau}/6)\n"
-                    f"• PM 2.5 : {pm25:.1f} µg/m³\n"
-                    f"• PM 10  : {pm10:.1f} µg/m³\n\n"
+                    f"Statut global : {statut} (Niveau {niveau}/6)\n"
+                    f"PM 2.5 : {pm25:.1f} µg/m³\n"
+                    f"PM 10  : {pm10:.1f} µg/m³\n\n"
+                    f"TEMP   : {hr:.1f}%\n\n\n"
                     "Pensez a limiter l'aeration et a consulter votre tableau de bord."
                 )
                 server.send_message(msg)
