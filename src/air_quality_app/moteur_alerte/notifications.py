@@ -64,4 +64,4 @@ def envoyer_salve_alertes(
         raise
 
 
-# Validation CI finale
+# git commit
