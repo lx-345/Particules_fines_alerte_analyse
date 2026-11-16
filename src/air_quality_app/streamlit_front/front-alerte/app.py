@@ -2,6 +2,7 @@ import os
 import smtplib
 import sqlite3
 from email.mime.text import MIMEText
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -216,6 +217,20 @@ def main():
                 st.rerun()
             except Exception as e:
                 st.error(f"Erreur lors de la purge : {e}")
+
+        st.subheader("Contrôle du moteur d'alerte")
+        if st.button("🔓 Réinitialiser le verrou anti-spam (Worker)"):
+            try:
+                # On crée un fichier "signal" dans le dossier partagé
+                dossier_data = Path(os.getenv("DB_DIR", "data"))
+                dossier_data.mkdir(exist_ok=True)
+                (dossier_data / "reset_spam.flag").touch()
+                st.success(
+                    "Signal envoyé ! Le worker réinitialisera ses alertes "
+                    "à son prochain cycle (dans max 60s)."
+                )
+            except Exception as e:
+                st.error(f"Erreur lors de l'envoi du signal : {e}")
 
         st.subheader("Simulation du moteur sur la base SQLite")
         forcer = st.checkbox(
