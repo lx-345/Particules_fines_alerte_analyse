@@ -5,7 +5,12 @@ from email.mime.text import MIMEText
 
 import pandas as pd
 import streamlit as st
-from database import DB_PATH, ajouter_utilisateur, init_db
+from database import (
+    DB_PATH,
+    ajouter_utilisateur,
+    init_db,
+    purger_base_de_donnees,
+)
 
 from air_quality_app.moteur_alerte.api import (
     calculer_niveau_atmo,
@@ -202,6 +207,15 @@ def main():
             st.error(f"Erreur de lecture : {e}")
         finally:
             conn.close()
+
+        st.subheader("Zone de danger (Nettoyage)")
+        if st.button("🚨 Vider toute la base de données"):
+            try:
+                purger_base_de_donnees()
+                st.success("La base de données a été entièrement vidée !")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erreur lors de la purge : {e}")
 
         st.subheader("Simulation du moteur sur la base SQLite")
         forcer = st.checkbox(

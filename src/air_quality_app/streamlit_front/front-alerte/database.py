@@ -74,3 +74,14 @@ def ajouter_utilisateur(
             raise ValueError(
                 f"L'adresse {email} est déjà inscrite pour le capteur {capteur}."
             )
+
+
+def purger_base_de_donnees() -> None:
+    """Supprime tous les inscrits et réinitialise le compteur d'ID."""
+    with sqlite3.connect(str(DB_PATH)) as conn:
+        cursor = conn.cursor()
+        # Supprime toutes les lignes de la table
+        cursor.execute("DELETE FROM users")
+        # Remet le compteur de l'auto-incrément (ID) à zéro
+        cursor.execute("DELETE FROM sqlite_sequence WHERE name='users'")
+        conn.commit()
